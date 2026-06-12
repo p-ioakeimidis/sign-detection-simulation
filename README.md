@@ -46,8 +46,8 @@ traffic_detection.py    # Main object detection and sign response script
 
 1. Clone the repository:
 ```bash
-https://github.com/p-ioakeimidis/lane-following-simulation.git
-cd lane-following-simulation
+https://github.com/p-ioakeimidis/sign-detection-simulation.git
+cd sign-detection-simulation
 
 ```
 
@@ -69,7 +69,7 @@ pip install opencv-python ultralytics openvino
 
 4. Run the application:
 ```bash
-python traffic_detection.py
+python sign_detection.py
 
 ```
 
@@ -90,8 +90,8 @@ sudo apt install python3 python3-pip python3-venv
 Clone the repository:
 
 ```bash
-git clone https://github.com/your-username/your-repository.git
-cd your-repository
+git clone https://p-ioakeimidis/sign-detection-simulation.git
+cd sign-detection-simulation
 
 ```
 
@@ -113,7 +113,7 @@ pip install opencv-python ultralytics openvino
 Run the program:
 
 ```bash
-python3 traffic_detection.py
+python3 sign_detection.py
 
 ```
 
