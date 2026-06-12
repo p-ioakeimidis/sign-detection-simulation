@@ -1,16 +1,27 @@
+import os
 import cv2
-from picamera2 import Picamera2
 from ultralytics import YOLO
-from ultralytics.utils.plotting import Annotator
 
+# =========================
+# Paths (GitHub-friendly)
+# =========================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Set up the camera with Picam
-picam2 = Picamera2()
-picam2.preview_configuration.main.size = (360,180)
-picam2.preview_configuration.main.format = "RGB888"
-picam2.preview_configuration.align()
-picam2.configure("preview")
-picam2.start()
+MODEL_PATH = os.path.join(BASE_DIR, "models", "model_openvino")
+VIDEO_PATH = os.path.join(BASE_DIR, "data", "test_video.mp4")
+
+# =========================
+# Load model + video
+# =========================
+model = YOLO(MODEL_PATH)
+cap = cv2.VideoCapture(VIDEO_PATH)
+
+if not cap.isOpened():
+    raise FileNotFoundError(f"Cannot open video: {VIDEO_PATH}")
+
+# =========================
+# Class mapping
+# =========================
 names = {
     0: "crossed_highway_sign",
     1: "green_light",
@@ -28,66 +39,70 @@ names = {
     13: "pedestrian",
     14: "roadblock"
 }
-# Load YOLOv8
-model = YOLO("/home/pi/brain_25/Brain/src/algorithms/threads/semifinal_model_3_openvino_model")
 
+# =========================
+# Constants (if you need later)
+# =========================
+KNOWN_WIDTH = 0.07
+FOCAL_LENGTH = 3058
+
+# =========================
+# Main loop
+# =========================
 while True:
-    # Capture a frame from the camera
-    frame = picam2.capture_array()
-    
-    
-    # Run YOLO model on the captured frame and store the results
-    results = model(frame)
-    annotator = Annotator(frame, example= names)
-    # Output the visual detection data, we will draw this on our camera preview window
-    annotated_frame = results[0].plot()
-    
-    # Get inference time
-    inference_time = results[0].speed['inference']
-    fps = 1000 / inference_time  # Convert to milliseconds
-    text = f'FPS: {fps:.1f}'
-
-    # Define font and position
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    text_size = cv2.getTextSize(text, font, 1, 2)[0]
-    text_x = annotated_frame.shape[1] - text_size[0] - 10  # 10 pixels from the right
-    text_y = text_size[1] + 10  # 10 pixels from the top
-
-    # Draw the text on the annotated frame
-    cv2.putText(annotated_frame, text, (text_x, text_y), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
-    # Display the resulting frame
-    cv2.imshow("Camera", annotated_frame)
-    # Run YOLO model on the captured frame and store the results
-
-    KNOWN_WIDTH = 0.07
-    FOCAL_LENGTH = 3058
-    
-    # Print detected object classes
-    for result in results:
-        for box in result.boxes:
-            bbox = box.xyxy[0].tolist()
-            # Get the class index and convert it to an integer
-            width, height, area = annotator.get_bbox_dimension(bbox)
-            cls = box.cls
-            class_idx = int(box.cls[0])
-            conf = box.conf
-            if conf >= 0.5:
-                # Use the model's names dictionary to get the class name
-                print("Bounding Box Width {}, Height {}, Area {}".format(width, height, area))
-                class_name = model.names[class_idx]
-                print("Detected object class:", class_name)
-                # Calculate the distance
-                #distance = (KNOWN_WIDTH * FOCAL_LENGTH) / width.item()
-                #print(f"Object: {model.names[int(cls)]}, Distance: {distance:.2f} meters")
-
-    
-    if class_name == 'pedestrian_sign':
-        print('reduce speed')
-    elif class_name == 'stop_sign':
-        print('0 speed')
-    # Exit the program if q is pressed
-    if cv2.waitKey(1) == ord("q"):
+    ret, frame = cap.read()
+    if not ret:
+        print("End of video or cannot read frame.")
         break
 
-# Close all windows
+    # YOLO inference
+    results = model(frame)
+    annotated_frame = results[0].plot()
+
+    # FPS calculation
+    inference_time = results[0].speed["inference"]
+    fps = 1000 / inference_time if inference_time > 0 else 0
+
+    cv2.putText(
+        annotated_frame,
+        f"FPS: {fps:.1f}",
+        (10, 30),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1,
+        (255, 255, 255),
+        2,
+        cv2.LINE_AA
+    )
+
+    # =========================
+    # Detection logic
+    # =========================
+    class_name = None
+
+    for result in results:
+        for box in result.boxes:
+            conf = float(box.conf[0])
+            cls_id = int(box.cls[0])
+
+            if conf >= 0.5:
+                class_name = model.names[cls_id]
+                print(f"Detected: {class_name} ({conf:.2f})")
+
+    # Simple driving logic
+    if class_name == "pedestrian_sign":
+        print("reduce speed")
+    elif class_name == "stop_sign":
+        print("0 speed")
+
+    # Show output
+    cv2.imshow("YOLO Video Test", annotated_frame)
+
+    # Quit
+    if cv2.waitKey(1) & 0xFF == ord("q"):
+        break
+
+# =========================
+# Cleanup
+# =========================
+cap.release()
 cv2.destroyAllWindows()
