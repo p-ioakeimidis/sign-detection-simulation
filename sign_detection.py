@@ -7,8 +7,8 @@ from ultralytics import YOLO
 # =========================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-MODEL_PATH = os.path.join(BASE_DIR, "models", "openvino_model")
-VIDEO_PATH = os.path.join(BASE_DIR, "data", "bosch_test.mp4")
+MODEL_PATH = os.path.join(BASE_DIR, "openvino_model")
+VIDEO_PATH = os.path.join(BASE_DIR, "bosch_test.mp4")
 
 # =========================
 # Load model + video
