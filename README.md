@@ -124,7 +124,7 @@ python3 sign_detection.py
 Place your input video (`bosch_test_2.mp4`) and your OpenVINO model folder (`openvino_model`) in the project directory and run:
 
 ```bash
-python3 sing_detection.py
+python3 sign_detection.py
 
 ```
 
